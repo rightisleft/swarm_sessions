@@ -1,0 +1,24 @@
+---
+#https://docs.ansible.com/ansible/latest/user_guide/collections_using.html#install-multiple-collections-with-a-requirements-file
+collections:
+# Install a collection from Ansible Galaxy.
+- name: community.general
+  version: 3.8.0
+  source: https://galaxy.ansible.com
+
+- name: community.docker
+  version: 1.10.0
+
+- name: community.postgresql
+  version: 1.5.0
+
+roles:
+  - name: ptavares.ansible_role_docker
+  - name: mrlesmithjr.docker
+  - name: mrlesmithjr.ansible-docker-swarm
+  - name: mrlesmithjr.ansible_bootstrap_python
+  - name: nvidia.nvidia_driver
+  - name: nvidia.nvidia_docker
+
+
+

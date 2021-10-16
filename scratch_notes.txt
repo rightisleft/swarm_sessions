@@ -1,0 +1,65 @@
+    - name: Prints two lines of messages, but only if there is an environment value set
+      ansible.builtin.debug:
+        msg: "{{ ansible_user }}"
+
+    - name: install linux headers
+      package:
+        name: "linux-headers-{{ ansible_kernel }}"
+
+    - name: Install modern python3
+      community.general.alternatives:
+        name: python
+        link: /usr/bin/python
+        path: /usr/bin/python3
+        priority: 1
+
+    - name: Run Docker Install Role
+      include_role:
+        name: ptavares.ansible_role_docker
+      vars:
+        docker_users:
+        - "vagrant"
+
+
+
+
+
+
+{
+    "default-runtime": "nvidia",
+    "default-shm-size": "1G",
+    "default-ulimits": {
+        "memlock": {
+            "hard": -1,
+            "name": "memlock",
+            "soft": -1
+        },
+        "stack": {
+            "hard": 67108864,
+            "name": "stack",
+            "soft": 67108864
+        }
+    },
+    "runtimes": {
+        "nvidia": {
+            "path": "/usr/bin/nvidia-container-runtime",
+            "runtimeArgs": []
+        }
+    }
+}
+
+{
+  "runtimes": {
+    "nvidia": {
+      "path": "/usr/bin/nvidia-container-runtime",
+      "runtimeArgs": []
+    }
+  },
+  "default-runtime": "nvidia",
+  "metrics-addr": "0.0.0.0:9323",
+  "log-driver": "json-file",
+  "log-opts": {"max-size": "20m", "max-file": "4"},
+  "max-concurrent-uploads": 30,
+  "max-concurrent-downloads": 30,
+  "experimental": true
+}

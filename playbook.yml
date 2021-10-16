@@ -1,0 +1,40 @@
+---
+- name: Base Docker installation for all
+  hosts: docker-nodes
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Run ansible_bootstrap_python
+      include_role:
+        name: mrlesmithjr.ansible_bootstrap_python
+
+    - name: Run ansible-docker
+      include_role:
+        name: ansible-docker
+      vars:
+        docker_config_users: true
+        docker_users:
+        - "vagrant"
+
+    - name: Run ansible-docker-swarm
+      include_role:
+        name: ansible-docker-swarm
+      vars:
+        docker_swarm_interface: "eth1"
+
+- name: Nvidia GPU Target
+  hosts: docker-swarm-gpu
+  become: true
+  gather_facts: true
+  tasks:
+
+    - name: Install cuda drivers
+      include_role:
+        name: nvidia.nvidia_driver
+      vars:
+        nvidia_driver_ubuntu_install_from_cuda_repo: yes
+
+  - name: Install Nvidia Docker
+    include_role:
+      name: nvidia.nvidia_docker
+
