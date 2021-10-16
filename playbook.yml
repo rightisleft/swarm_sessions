@@ -1,29 +1,41 @@
 ---
-#- name: Base Docker installation for all
-#  hosts: docker-nodes
-#  become: true
-#  gather_facts: true
-#  tasks:
-#    - name: Run ansible_bootstrap_python
-#      include_role:
-#        name: mrlesmithjr.ansible_bootstrap_python
-#
-#    - name: Run ansible-docker
-#      include_role:
-#        name: ansible-docker
-#      vars:
-#        docker_config_users: true
-#        docker_users:
-#        - "vagrant"
-#
-#    - name: Run ansible-docker-swarm
-#      include_role:
-#        name: ansible-docker-swarm
-#      vars:
-#        docker_swarm_interface: "eth1"
+- name: Base Docker installation for all
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+
+    - name: install jq for json parsing on all machines
+      package:
+        name:
+        - jq
+
+    - name: Run ansible_bootstrap_python
+      include_role:
+        name: mrlesmithjr.ansible_bootstrap_python
+
+    - name: reset ssh connection
+      meta: reset_connection
+
+    - name: Run ansible-docker
+      include_role:
+        name: ansible-docker
+      vars:
+        docker_config_users: true
+        docker_users:
+        - "vagrant"
+
+#    - name: Unconditionally reboot the machine with all defaults
+#      reboot:
+
+    - name: Run ansible-docker-swarm
+      include_role:
+        name: ansible-docker-swarm
+      vars:
+        docker_swarm_interface: "eth1"
 
 - name: Nvidia GPU Target
-  hosts: docker-swarm-gpu
+  hosts: all
   become: true
   gather_facts: true
   tasks:
