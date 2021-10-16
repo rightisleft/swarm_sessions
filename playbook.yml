@@ -1,26 +1,26 @@
 ---
-- name: Base Docker installation for all
-  hosts: docker-nodes
-  become: true
-  gather_facts: true
-  tasks:
-    - name: Run ansible_bootstrap_python
-      include_role:
-        name: mrlesmithjr.ansible_bootstrap_python
-
-    - name: Run ansible-docker
-      include_role:
-        name: ansible-docker
-      vars:
-        docker_config_users: true
-        docker_users:
-        - "vagrant"
-
-    - name: Run ansible-docker-swarm
-      include_role:
-        name: ansible-docker-swarm
-      vars:
-        docker_swarm_interface: "eth1"
+#- name: Base Docker installation for all
+#  hosts: docker-nodes
+#  become: true
+#  gather_facts: true
+#  tasks:
+#    - name: Run ansible_bootstrap_python
+#      include_role:
+#        name: mrlesmithjr.ansible_bootstrap_python
+#
+#    - name: Run ansible-docker
+#      include_role:
+#        name: ansible-docker
+#      vars:
+#        docker_config_users: true
+#        docker_users:
+#        - "vagrant"
+#
+#    - name: Run ansible-docker-swarm
+#      include_role:
+#        name: ansible-docker-swarm
+#      vars:
+#        docker_swarm_interface: "eth1"
 
 - name: Nvidia GPU Target
   hosts: docker-swarm-gpu
@@ -28,13 +28,34 @@
   gather_facts: true
   tasks:
 
-    - name: Install cuda drivers
-      include_role:
-        name: nvidia.nvidia_driver
-      vars:
-        nvidia_driver_ubuntu_install_from_cuda_repo: yes
+  - name: Install cuda drivers
+    include_role:
+      name: nvidia.nvidia_driver
+    vars:
+      nvidia_driver_ubuntu_install_from_cuda_repo: yes
 
   - name: Install Nvidia Docker
     include_role:
       name: nvidia.nvidia_docker
+
+  - name: find how many gpus are registered with the nvidia driver
+    shell: "nvidia-smi -L | grep UUID | wc -l"
+    register: gpu_count
+
+  - name: Append generic resources to daemon json
+    become: true
+    shell: 'cat /etc/docker/daemon.json | jq ". |= . + {\"node-generic-resources\": [\"pienso-gpu={{ gpu_count.stdout | int }}\"]}"'
+    register: json
+
+  - name: write new daemon json
+    copy:
+      content: "{{ json.stdout }}"
+      dest: "/etc/docker/daemon.json"
+
+  - name: Restart service docker, in all cases, for changes to take effect
+    service:
+      name: docker
+      state: restarted
+
+
 
