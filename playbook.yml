@@ -1,23 +1,33 @@
 ---
 - name: Base Docker installation for all
   hosts: all
+  any_errors_fatal: true
   become: true
   gather_facts: true
   tasks:
+    - name: Disable firewall rulez
+      become: true
+      ufw:
+        state: disabled
+      when: ansible_facts['os_family'] == "Debian"
 
-    - name: install jq for json parsing on all machines
-      package:
-        name:
-        - jq
+    - name: Turn off centos firewalld
+      service:
+        name: firewalld
+        state: stopped
+      when: ansible_facts['os_family'] == "RedHat"
 
-    - name: Run ansible_bootstrap_python
+    - name: Validate nvidia dns is resolvable on all hosts
+      shell: 'curl https://nvidia.github.io/nvidia-docker/gpgkey'
+
+    - name: Validate nvidia dns is resolvable on all hosts
+      shell: 'curl https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub'
+
+    - name: Install python dependencies
       include_role:
         name: mrlesmithjr.ansible_bootstrap_python
 
-    - name: reset ssh connection
-      meta: reset_connection
-
-    - name: Run ansible-docker
+    - name: Install the Docker daemon
       include_role:
         name: ansible-docker
       vars:
@@ -25,49 +35,49 @@
         docker_users:
         - "vagrant"
 
-#    - name: Unconditionally reboot the machine with all defaults
-#      reboot:
+    - name: Turn on debug docker logs and experimental features
+      become: true
+      shell: 'echo "{ \"debug\": true,  \"experimental\": true }" > /etc/docker/daemon.json && systemctl restart docker'
 
-    - name: Run ansible-docker-swarm
+    - name: Install cuda drivers
+      include_role:
+        name: nvidia.nvidia_driver
+      vars:
+        nvidia_driver_ubuntu_install_from_cuda_repo: yes
+
+    - name: Install Nvidia Docker
+      include_role:
+        name: nvidia.nvidia_docker
+
+    - name: find how many gpus are registered with the nvidia driver
+      shell: "nvidia-smi -L | grep UUID | wc -l"
+      register: gpu_count
+
+    - name: install jq for daemon json parsing on all machines
+      package:
+        name:
+        - jq
+
+    - name: Append generic resources to daemon json
+      become: true
+      shell: 'cat /etc/docker/daemon.json | jq ". |= . + {\"node-generic-resources\": [\"pienso-gpu={{ gpu_count.stdout | int }}\"]}"'
+      register: json
+
+    - name: write new daemon json
+      copy:
+        content: "{{ json.stdout }}"
+        dest: "/etc/docker/daemon.json"
+
+    - name: Restart service docker, in all cases, for changes to take effect
+      service:
+        name: docker
+        state: restarted
+
+    - name: Configure the Docker daemon
       include_role:
         name: ansible-docker-swarm
       vars:
         docker_swarm_interface: "eth1"
-
-- name: Nvidia GPU Target
-  hosts: all
-  become: true
-  gather_facts: true
-  tasks:
-
-  - name: Install cuda drivers
-    include_role:
-      name: nvidia.nvidia_driver
-    vars:
-      nvidia_driver_ubuntu_install_from_cuda_repo: yes
-
-  - name: Install Nvidia Docker
-    include_role:
-      name: nvidia.nvidia_docker
-
-  - name: find how many gpus are registered with the nvidia driver
-    shell: "nvidia-smi -L | grep UUID | wc -l"
-    register: gpu_count
-
-  - name: Append generic resources to daemon json
-    become: true
-    shell: 'cat /etc/docker/daemon.json | jq ". |= . + {\"node-generic-resources\": [\"pienso-gpu={{ gpu_count.stdout | int }}\"]}"'
-    register: json
-
-  - name: write new daemon json
-    copy:
-      content: "{{ json.stdout }}"
-      dest: "/etc/docker/daemon.json"
-
-  - name: Restart service docker, in all cases, for changes to take effect
-    service:
-      name: docker
-      state: restarted
 
 
 

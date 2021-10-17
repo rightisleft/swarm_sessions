@@ -63,3 +63,43 @@
   "max-concurrent-downloads": 30,
   "experimental": true
 }
+
+
+
+
+
+
+
+
+**Describe the bug**
+Given that a worker node is attempting to join a swarm,
+Then it should not encounter the following error on first join:
+
+```
+failed to retrieve remote root CA certificate" error="rpc error: code = DeadlineExceeded desc = context deadline exceeded" module=node
+```
+
+The ansible -playbook shows the following output:
+
+```
+TASK [ansible-docker-swarm : cluster | Joining Docker Swarm Workers To Cluster] ************************************************************************************************************************************************************
+skipping: [192.168.1.125]
+fatal: [192.168.1.126]: FAILED! => {"changed": true, "cmd": ["docker", "swarm", "join", "--listen-addr", "192.168.1.126:2377", "--advertise-addr", "192.168.1.126", "--token", "SWMTKN-1-2u7c30e0yt7p7y34brwptnb74agu40tj65xd54x439puyn5hyo-7g2v0gh8hocxuizo2o01ky3b2", "192.168.1.125:2377"], "delta": "0:00:20.051735", "end": "2021-10-16 04:00:00.545599", "msg": "non-zero return code", "rc": 1, "start": "2021-10-16 03:59:40.493864", "stderr": "Error response from daemon: Timeout was reached before node joined. The attempt to join the swarm will continue in the background. Use the \"docker info\" command to see the current swarm status of your node.", "stderr_lines": ["Error response from daemon: Timeout was reached before node joined. The attempt to join the swarm will continue in the background. Use the \"docker info\" command to see the current swarm status of your node."], "stdout": "", "stdout_lines": []}
+fatal: [192.168.1.128]: FAILED! => {"changed": true, "cmd": ["docker", "swarm", "join", "--listen-addr", "192.168.1.128:2377", "--advertise-addr", "192.168.1.128", "--token", "SWMTKN-1-2u7c30e0yt7p7y34brwptnb74agu40tj65xd54x439puyn5hyo-7g2v0gh8hocxuizo2o01ky3b2", "192.168.1.125:2377"], "delta": "0:00:20.038492", "end": "2021-10-16 04:00:00.132916", "msg": "non-zero return code", "rc": 1, "start": "2021-10-16 03:59:40.094424", "stderr": "Error response from daemon: Timeout was reached before node joined. The attempt to join the swarm will continue in the background. Use the \"docker info\" command to see the current swarm status of your node.", "stderr_lines": ["Error response from daemon: Timeout was reached before node joined. The attempt to join the swarm will continue in the background. Use the \"docker info\" command to see the current swarm status of your node."], "stdout": "", "stdout_lines": []}
+...
+...
+...
+```
+
+**To Reproduce**
+Steps to reproduce the behavior:
+1. pull https://github.com/rightisleft/swarm_sessions/
+2.  cd ~/swarm_sessions/vms
+3. vagrant up
+4. cd ..
+5. ansible-playbook -i hosts.yml playbook.yml
+
+** Comments **
+The failures seem to rotate randomly between different vms after destroy/up. But there seems to be something wrong at the daemon level that is preventing ubuntu images from consistently joining the swarm.
+
+I've tried 3 different ubuntu vm images: hashicorp/bionic64, generic/ubuntu1804 - both had the same result
