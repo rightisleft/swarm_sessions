@@ -103,3 +103,14 @@ Steps to reproduce the behavior:
 The failures seem to rotate randomly between different vms after destroy/up. But there seems to be something wrong at the daemon level that is preventing ubuntu images from consistently joining the swarm.
 
 I've tried 3 different ubuntu vm images: hashicorp/bionic64, generic/ubuntu1804 - both had the same result
+
+
+*** Helpers
+
+Remove Down Nodes
+```
+vagrant@uno:~$ docker node ls | grep Down | awk ‘{print $1;}’ | xargs docker node rm
+```
+
+Clear Swarm
+ansible -i hosts.yml docker-swarm-workers -a “docker swarm leave”
