@@ -19,9 +19,10 @@ Ensure you are running
 ```
 
 ### Start VMS
+Start with clean vms...
 ```
 cd ~/anszi/vms
-vagrant up
+vagrant destroy --force && vagrant up
 ```
 
 ### Install Modules

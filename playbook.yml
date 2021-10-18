@@ -1,6 +1,7 @@
 ---
+
 # Notes -
-# The following error is 'rescued'
+# The following 'error' is 'rescued' and then corrected
 # TASK [nvidia.nvidia_driver : attempt to install kernel support packages for current version] ***********************************************************************************************************************************************
 # fatal: [10.10.1.130]: FAILED! => {"changed": false, "msg": "No package matching 'kernel-headers-3.10.0-1127.el7.x86_64' found available, installed or updated", "rc": 126, "results": ["No package matching 'kernel-headers-3.10.0-1127.el7.x86_64' found available, installed or updated"]}
 
@@ -10,17 +11,22 @@
   become: true
   gather_facts: true
   tasks:
-    - name: Disable firewall rulez
+    - name: Disable firewall rules (Debian)
       become: true
       ufw:
         state: disabled
       when: ansible_facts['os_family'] == "Debian"
 
-    - name: Turn off centos firewalld
+    - name: Disable firewall rules (Redhat)
       service:
         name: firewalld
         state: stopped
       when: ansible_facts['os_family'] == "RedHat"
+
+    - name: install jq for daemon json parsing on all machines
+      package:
+        name:
+        - jq
 
     - name: Validate nvidia dns is resolvable on all hosts
       shell: 'curl https://nvidia.github.io/nvidia-docker/gpgkey'
@@ -34,15 +40,21 @@
 
     - name: Install the Docker daemon
       include_role:
-        name: ansible-docker
+        name: mrlesmithjr.docker
       vars:
         docker_config_users: true
         docker_users:
         - "vagrant"
 
-    - name: Turn on debug docker logs and experimental features
-      become: true
-      shell: 'echo "{ \"debug\": true,  \"experimental\": true }" > /etc/docker/daemon.json && systemctl restart docker'
+    - name: Copy daemon.json with logging, gpu, and various other settings to all hosts
+      copy:
+        src: daemon.json
+        dest: /etc/docker/daemon.json
+
+    - name: Restart service docker to process new daemon.json
+      service:
+        name: docker
+        state: restarted
 
     - name: Install cuda drivers
       include_role:
@@ -57,11 +69,6 @@
     - name: find how many gpus are registered with the nvidia driver
       shell: "nvidia-smi -L | grep UUID | wc -l"
       register: gpu_count
-
-    - name: install jq for daemon json parsing on all machines
-      package:
-        name:
-        - jq
 
     - name: Append generic resources to daemon json
       become: true
@@ -80,7 +87,7 @@
 
     - name: Configure the Docker daemon
       include_role:
-        name: ansible-docker-swarm
+        name: mrlesmithjr.ansible-docker-swarm
       vars:
         docker_swarm_interface: "eth1"
 

@@ -13,7 +13,6 @@ collections:
   version: 1.5.0
 
 roles:
-  - name: ptavares.ansible_role_docker
   - name: mrlesmithjr.docker
   - name: mrlesmithjr.ansible-docker-swarm
   - name: mrlesmithjr.ansible_bootstrap_python
