@@ -114,3 +114,6 @@ vagrant@uno:~$ docker node ls | grep Down | awk ‘{print $1;}’ | xargs docker
 
 Clear Swarm
 ansible -i hosts.yml docker-swarm-workers -a “docker swarm leave”
+
+Check all nodes for pienso-gpu values
+docker node ls | grep Ready | awk '{print $1;}' | xargs docker node inspect | grep pienso

@@ -1,4 +1,9 @@
 ---
+# Notes -
+# The following error is 'rescued'
+# TASK [nvidia.nvidia_driver : attempt to install kernel support packages for current version] ***********************************************************************************************************************************************
+# fatal: [10.10.1.130]: FAILED! => {"changed": false, "msg": "No package matching 'kernel-headers-3.10.0-1127.el7.x86_64' found available, installed or updated", "rc": 126, "results": ["No package matching 'kernel-headers-3.10.0-1127.el7.x86_64' found available, installed or updated"]}
+
 - name: Base Docker installation for all
   hosts: all
   any_errors_fatal: true
